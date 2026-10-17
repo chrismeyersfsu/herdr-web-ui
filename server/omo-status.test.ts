@@ -226,6 +226,34 @@ describe("OmO panes' status in place of herdr's", () => {
     expect(told.at(-1)).toEqual(["omo", "idle", 1, false]);
   });
 
+  it("tracks a cell that detached while waiting for its kernel or queued behind an empty list", () => {
+    // Given the runtime's other detach wordings.
+    const waiting = JSON.stringify({ type: "message", timestamp: "2026-10-02T00:00:40.000Z", message: { role: "toolResult", toolName: "eval", content: [
+      { type: "text", text: "Eval cell cell-wait is detached and waiting for the js kernel to be ready; it runs first once the kernel is ready and completes as one notification." },
+    ] } });
+    const queuedEmpty = JSON.stringify({ type: "message", timestamp: "2026-10-02T00:00:41.000Z", message: { role: "toolResult", toolName: "eval", content: [
+      { type: "text", text: "Eval cell cell-q is queued behind  in the py kernel and detached; it runs after them and completes as one notification." },
+    ] } });
+    // When both are read.
+    const turn = [waiting, queuedEmpty].reduce((current, text) => omoTurnAfter(current, { text }), noTurn());
+    // Then both cells hold the finish.
+    expect(turn.detached?.map((cell) => cell.id)).toEqual(["cell-wait", "cell-q"]);
+  });
+
+  it("settles every cell a combined or image-carrying notification reports", () => {
+    // Given three detached cells.
+    const open = ["cell-one", "cell-two", "cell-three"].map((id) => detached(id));
+    const start = open.reduce((current, text) => omoTurnAfter(current, { text }), noTurn());
+    // When one notice ends two cells together and another carries an image beside its text.
+    const combined = JSON.stringify({ type: "custom_message", customType: "senpi-codemode:notification", timestamp: "2026-10-02T00:01:00.000Z",
+      content: "<system-reminder>Detached eval cell cell-one (js) cancelled.\n(no output)</system-reminder>\n\n<system-reminder>Detached eval cell cell-two (js) cancelled.\n(no output)</system-reminder>" });
+    const withImage = JSON.stringify({ type: "custom_message", customType: "senpi-codemode:notification", timestamp: "2026-10-02T00:01:01.000Z",
+      content: [{ type: "text", text: "<system-reminder>Detached eval cell cell-three (js) completed.</system-reminder>" }, { type: "image", data: "AAAA", mimeType: "image/png" }] });
+    // Then all three are settled.
+    expect(omoTurnAfter(start, { text: combined }).detached?.map((cell) => cell.id)).toEqual(["cell-three"]);
+    expect(omoTurnAfter(omoTurnAfter(start, { text: combined }), { text: withImage }).detached).toEqual([]);
+  });
+
   it("ignores detached cells from before the process holding the session", async () => {
     // Given an old cell followed by a recent answer in a resumed session.
     const { omo, state } = setup(lines(detached(), message("assistant", "stop", LATER)));
