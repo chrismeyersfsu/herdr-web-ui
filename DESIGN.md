@@ -956,7 +956,8 @@ Alert rows of the table above from the `--droplet-*` roles in `src/styles.css`.
   On One line, as in herdr's own sidebar, a top-level git workspace (a repository, or a worktree
   whose repository is not open) says its branch under its name in `--text-dim` `--fs-xs`, on a
   two-line row's height (`--side-row-2`); an indented worktree, whose name already comes from its
-  branch, and a folder outside git stay one line. The branch is read with the worktree inventory
+  branch, a pinned workspace in its card (the branch stays in its tooltip and menu) and a folder
+  outside git stay one line. The branch is read with the worktree inventory
   (`useWorktreeBranches`), a repository without worktrees and a git workspace herdr has not marked
   included. As herdr draws its tree, each indented worktree hangs from its repository's folder on
   a `--hairline` `--border-strong` branch in the indent: a tee for each but the last, an elbow for
