@@ -71,7 +71,7 @@ function readRegistry(sessionFile: string): ThreadRegistry {
   return { version: 1, threads: [] };
 }
 
-/** Threads for a pane, newest first; an empty list covers every non-threaded pane. */
+/** Threads for a pane, newest first, with live status read from each thread's session; an empty list covers every non-threaded pane. */
 export async function paneThreads(paneId: string): Promise<ThreadSummary[]> {
   const sessionFile = await piSessionFile(paneId);
   if (sessionFile === null) return [];
@@ -79,37 +79,42 @@ export async function paneThreads(paneId: string): Promise<ThreadSummary[]> {
   return registry.threads
     .filter((thread) => typeof thread?.id === "string" && thread?.anchor && typeof thread.anchor.quote === "string")
     .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
-    .map((thread) => ({
-      id: thread.id,
-      title: typeof thread.title === "string" ? thread.title : thread.id,
-      question: typeof thread.question === "string" ? thread.question : "",
-      quote: thread.anchor.quote,
-      status: thread.status === "done" || thread.status === "error" ? thread.status : "running",
-      turns: typeof thread.turns === "number" ? thread.turns : 0,
-      created_at: new Date(typeof thread.createdAt === "number" ? thread.createdAt : Date.now()).toISOString(),
-    }));
+    .map((thread) => {
+      const live = typeof thread.sessionFile === "string" ? readThreadSession(thread.sessionFile, thread.anchor.entryId) : null;
+      return {
+        id: thread.id,
+        title: typeof thread.title === "string" ? thread.title : thread.id,
+        question: typeof thread.question === "string" ? thread.question : "",
+        quote: thread.anchor.quote,
+        status: live?.status ?? "running",
+        turns: live?.turnCount ?? 0,
+        created_at: new Date(typeof thread.createdAt === "number" ? thread.createdAt : Date.now()).toISOString(),
+      };
+    });
 }
 
 /**
- * One thread's turns: the entries after its anchor in the thread's session
- * file. Thread sessions are small and append-only, so a single bounded read
+ * One thread's turns and live state: the entries after its anchor in the thread's
+ * session file. Thread sessions are small and append-only, so a single bounded read
  * answers; a torn last line (the writer is mid-append) is skipped, not fatal.
+ *
+ * Status is computed here, not read from the registry: the extension refreshes the
+ * registry only when a `/threads` runs in the pane, and the web UI — the registry's
+ * primary reader — must see a finished thread without anyone typing.
  */
-export async function paneThread(paneId: string, threadId: string): Promise<ConversationTurn[] | null> {
-  const sessionFile = await piSessionFile(paneId);
-  if (sessionFile === null) return null;
-  const registry = readRegistry(sessionFile);
-  const thread = registry.threads.find((entry) => entry.id === threadId);
-  if (!thread || typeof thread.sessionFile !== "string") return null;
+interface ThreadLive { turns: ConversationTurn[]; status: "running" | "done" | "error"; turnCount: number }
 
+function readThreadSession(sessionFile: string, anchorEntryId: string): ThreadLive | null {
   let text: string;
   try {
-    text = readFileSync(thread.sessionFile, "utf-8");
+    text = readFileSync(sessionFile, "utf-8");
   } catch {
     return null; // not written yet: the branch exists, the child has not started
   }
 
   const turns: ConversationTurn[] = [];
+  let messages = 0;
+  let status: ThreadLive["status"] = "running";
   let pastAnchor = false;
   for (const line of text.split("\n")) {
     if (line.trim().length === 0) continue;
@@ -119,7 +124,7 @@ export async function paneThread(paneId: string, threadId: string): Promise<Conv
     } catch {
       continue; // a torn tail line: the writer is mid-append
     }
-    if (typeof entry.id === "string" && entry.id === thread.anchor.entryId) {
+    if (typeof entry.id === "string" && entry.id === anchorEntryId) {
       pastAnchor = true;
       continue; // the anchor entry itself belongs to the parent conversation
     }
@@ -136,6 +141,22 @@ export async function paneThread(paneId: string, threadId: string): Promise<Conv
         : [];
     if (parts.length === 0) continue;
     turns.push({ role, ts: null, parts });
+    messages += 1;
+    if (role === "assistant") {
+      const stopReason = entry.message.stopReason;
+      if (stopReason === "error") status = "error";
+      else if (stopReason && stopReason !== "pending") status = "done";
+    }
   }
-  return turns;
+  // parity with the extension's turn count: the anchored question itself is not a turn
+  return { turns, status, turnCount: Math.max(0, messages - 1) };
+}
+
+export async function paneThread(paneId: string, threadId: string): Promise<ConversationTurn[] | null> {
+  const sessionFile = await piSessionFile(paneId);
+  if (sessionFile === null) return null;
+  const registry = readRegistry(sessionFile);
+  const thread = registry.threads.find((entry) => entry.id === threadId);
+  if (!thread || typeof thread.sessionFile !== "string") return null;
+  return readThreadSession(thread.sessionFile, thread.anchor.entryId)?.turns ?? null;
 }
