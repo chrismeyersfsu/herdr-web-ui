@@ -200,6 +200,7 @@ export function telemetrySettingsSnapshot(settings: Settings): TelemetrySettings
     enterSends: settings.enterSends,
     autoSendQueued: settings.autoSendQueued,
     suggestionChip: settings.suggestionChip,
+    chatThreads: settings.chatThreads,
     showThinking: settings.showThinking,
     keepScreenOn: settings.keepScreenOn,
     language: settings.language,

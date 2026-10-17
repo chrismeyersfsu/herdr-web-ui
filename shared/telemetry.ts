@@ -67,6 +67,7 @@ export interface TelemetrySettings {
   enterSends: boolean;
   autoSendQueued: boolean;
   suggestionChip: boolean;
+  chatThreads: boolean;
   showThinking: boolean;
   keepScreenOn: boolean;
   language: "system" | "en" | "zh" | "ja" | "ko";
@@ -137,6 +138,7 @@ const TELEMETRY_SETTINGS_VALIDATORS = {
   enterSends: booleanValue,
   autoSendQueued: booleanValue,
   suggestionChip: booleanValue,
+  chatThreads: booleanValue,
   showThinking: booleanValue,
   keepScreenOn: booleanValue,
   language: oneOf(["system", "en", "zh", "ja", "ko"]),

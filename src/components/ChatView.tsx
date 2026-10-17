@@ -757,36 +757,6 @@ export const ChatView = memo(function ChatView({ paneId, active = true, threadsE
   const pageVisible = usePageVisible();
   const visible = paneVisible && pageVisible;
 
-  // the thread sheet's selection affordance: a selection inside an assistant
-  // reply offers "Learn more" beside it; tapping hands the quote to the sheet
-  const chatRoot = useRef<HTMLDivElement | null>(null);
-  const chatRootWith = (other: { current: HTMLDivElement | null }) => (node: HTMLDivElement | null): void => {
-    chatRoot.current = node;
-    other.current = node;
-  };
-  const [threadButton, setThreadButton] = useState<{ x: number; y: number; quote: string } | null>(null);
-  useEffect(() => {
-    if (!threadsEnabled || !onThreadQuote) return;
-    const update = () => {
-      const selection = document.getSelection();
-      const text = selection === null ? "" : selection.toString().trim();
-      const node = selection?.anchorNode;
-      const element = node instanceof Element ? node : node?.parentElement ?? null;
-      const inAgentTurn = element?.closest?.(".chat-turn-agent") ?? null;
-      const inThisChat = element?.closest?.(".chat-view") === chatRoot.current || chatRoot.current?.contains(element ?? null);
-      if (text.length < 12 || selection?.isCollapsed || !inAgentTurn || !inThisChat) {
-        setThreadButton(null);
-        return;
-      }
-      const rect = selection.getRangeAt(0).getBoundingClientRect();
-      setThreadButton({ x: Math.min(rect.left + rect.width / 2, window.innerWidth - 90), y: Math.max(rect.top - 40, 8), quote: text });
-    };
-    document.addEventListener("selectionchange", update);
-    return () => {
-      document.removeEventListener("selectionchange", update);
-      setThreadButton(null);
-    };
-  }, [threadsEnabled, onThreadQuote]);
   /** the answer last laid out: an unchanged poll (a 304) hands back this very object */
   const lastAnswer = useRef<ConversationResponse | null>(null);
   const [conversationRefresh] = useState(() => new ConversationRefresh());
@@ -834,6 +804,35 @@ export const ChatView = memo(function ChatView({ paneId, active = true, threadsE
   sentKeyRef.current = sentKey;
   const [promptPollKey, setPromptPollKey] = useState(0);
   const scroller = useRef<HTMLDivElement>(null);
+  // the thread sheet's selection affordance: a selection inside an assistant
+  // reply offers "Learn more" beside it; tapping hands the quote to the sheet.
+  // Containment is checked against `scroller`: the virtualized timeline fills it
+  // with its scroll node (ChatTimeline.attachList) and the plain scroller is it,
+  // so it is the one anchor present in every branch that can show turns.
+  const [threadButton, setThreadButton] = useState<{ x: number; y: number; quote: string } | null>(null);
+  useEffect(() => {
+    if (!threadsEnabled || !onThreadQuote) return;
+    const update = () => {
+      const selection = document.getSelection();
+      const text = selection === null ? "" : selection.toString().trim();
+      const node = selection?.anchorNode;
+      const element = node instanceof Element ? node : node?.parentElement ?? null;
+      const inAgentTurn = element?.closest?.(".chat-turn-agent") ?? null;
+      const inThisChat = scroller.current !== null && element !== null && scroller.current.contains(element);
+      if (selection === null || text.length < 12 || selection.isCollapsed || !inAgentTurn || !inThisChat) {
+        setThreadButton(null);
+        return;
+      }
+      const rect = selection.getRangeAt(0).getBoundingClientRect();
+      setThreadButton({ x: Math.min(rect.left + rect.width / 2, window.innerWidth - 90), y: Math.max(rect.top - 40, 8), quote: text });
+    };
+    document.addEventListener("selectionchange", update);
+    return () => {
+      document.removeEventListener("selectionchange", update);
+      setThreadButton(null);
+    };
+  }, [threadsEnabled, onThreadQuote]);
+
   const timeline = useRef<LegendListRef>(null);
   const ChatTimeline = useChatTimeline();
   const stickToBottom = useRef(true);
@@ -1464,7 +1463,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, threadsE
     <div className="chat-frame-body">
     {state.source === "conversation" ? ChatTimeline === null
       // its chunk is still loading: no turn is read until it arrives, so this is the loading state
-      ? <div className="chat-view chat-view-virtual" ref={chatRoot} role="log" aria-live="polite" aria-label={logLabel}>
+      ? <div className="chat-view chat-view-virtual" role="log" aria-live="polite" aria-label={logLabel}>
         <div className="chat-transcript chat-transcript-virtual">
           <div className="chat-virtual-header">{header}</div>
           <div className="chat-virtual-footer">{footer}</div>
@@ -1484,7 +1483,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, threadsE
       label={logLabel}
       onScroll={onScroll}
       renderRow={renderTurn}
-    /> : <div className="chat-view" ref={chatRootWith(scroller)} onScroll={onScroll} role="log" aria-live="polite" aria-label={logLabel}>
+    /> : <div className="chat-view" ref={scroller} onScroll={onScroll} role="log" aria-live="polite" aria-label={logLabel}>
       <div className="chat-transcript" data-conversation-source={state.conversationSource}>
         {agent !== null ? <TerminalFallback key={paneId} paneId={paneId} visible={visible} />
           : state.messages.map((message, index) => <FallbackTurn key={index} paneId={paneId} message={message} />)}
