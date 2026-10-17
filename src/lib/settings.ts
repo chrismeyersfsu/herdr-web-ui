@@ -113,6 +113,9 @@ export interface Settings {
   /** on a touch screen, a chip above the message box offers the prompt the agent suggests next.
    * Not `showSuggestionChip`: that key was on by default until 0.4.9 and is still stored on phones */
   suggestionChip: boolean;
+  /** the chat's thread sheet (pi threads): selection -> "Learn more" -> a side conversation.
+   *  Off until the pi threads extension and its registry are trusted together. */
+  chatThreads: boolean;
   /** show the agent's folded reasoning blocks in the chat view */
   showThinking: boolean;
   /** request a screen wake lock while a pane is open in this visible tab */
@@ -240,7 +243,7 @@ export const SETTING_SCOPE = {
   theme: "shared", palette: "shared", darkTheme: "shared", lightTheme: "shared", language: "shared", sidebarRows: "shared", agentOrder: "shared",
   agentMarks: "shared", autoSendQueued: "shared", showThinking: "shared", quickReplies: "shared",
   showQuickReplies: "shared", showUsage: "shared", usageCount: "shared",
-  usageGlance: "shared", usageOrder: "shared", usageHidden: "shared", defaultView: "device", suggestionChip: "device",
+  usageGlance: "shared", usageOrder: "shared", usageHidden: "shared", defaultView: "device", suggestionChip: "device", chatThreads: "device",
   terminalInputMode: "device", keyBarExtras: "device", keyBarItems: "device", shortcutOverrides: "device", density: "device",
   terminalFontSize: "device",
   terminalWheelSpeed: "device", terminalFontFamily: "device", paneClipboard: "device", releasePaneAway: "device",
@@ -285,6 +288,7 @@ export const DEFAULT_SETTINGS: Settings = {
   enterSends: true,
   autoSendQueued: true,
   suggestionChip: false,
+  chatThreads: false,
   showThinking: false,
   keepScreenOn: false,
   language: "system",
@@ -463,6 +467,7 @@ export function sanitizeSettings(raw: unknown): Settings {
     enterSends: typeof record["enterSends"] === "boolean" ? record["enterSends"] : DEFAULT_SETTINGS.enterSends,
     autoSendQueued: typeof record["autoSendQueued"] === "boolean" ? record["autoSendQueued"] : DEFAULT_SETTINGS.autoSendQueued,
     suggestionChip: typeof record["suggestionChip"] === "boolean" ? record["suggestionChip"] : DEFAULT_SETTINGS.suggestionChip,
+    chatThreads: typeof record["chatThreads"] === "boolean" ? record["chatThreads"] : DEFAULT_SETTINGS.chatThreads,
     showThinking: typeof record["showThinking"] === "boolean" ? record["showThinking"] : DEFAULT_SETTINGS.showThinking,
     keepScreenOn: typeof record["keepScreenOn"] === "boolean" ? record["keepScreenOn"] : DEFAULT_SETTINGS.keepScreenOn,
     language: LANGUAGE_SETTINGS.includes(record["language"] as LanguageSetting) ? record["language"] as LanguageSetting : DEFAULT_SETTINGS.language,

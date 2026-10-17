@@ -47,6 +47,8 @@ import type { AgentStatus, ClientRole, ConversationMetadata, InteractivePrompt, 
 import type { PaneControls, PaneView } from "../lib/actions.ts";
 import { usePaneLane } from "../lib/chatLane.ts";
 import { useSettings, terminalTheme, type Palette, type ResolvedTheme } from "../lib/settings.ts";
+import { ThreadSheet } from "./ThreadSheet.tsx";
+import "./ThreadSheet.css";
 import { loadFontStack, TERMINAL_FONT_STACK, terminalFontStack } from "../lib/fontFamily.ts";
 import { useT } from "../lib/i18n.ts";
 import { isAppShortcut } from "../lib/shortcuts.ts";
@@ -2313,6 +2315,13 @@ export function PaneTerminal({
   // must not turn a one-letter message into a control key. Offline it sends nothing and
   // keeps its text (never-queue); a message the server could not deliver keeps it too,
   // with the reason. Bracketed-paste wrapping follows the pane program's mode.
+  // the pi threads sheet: opened on a chat selection (ChatView's "Learn more"),
+  // submits through the composer so the pane types the /thread command itself
+  const [threadQuote, setThreadQuote] = useState<string | null>(null);
+  const closeThreadSheet = useCallback(() => setThreadQuote(null), []);
+  const submitThreadCommand = useCallback((text: string) => {
+    void submitComposerMessage(text);
+  }, []);
   const submitComposerMessage = useCallback((text: string, delivery: SubmitDelivery = "immediate", clearDraft?: string, sendAnyway = false, resendId?: string, generation?: number): Promise<SubmitResult> | null => {
     const term = termRef.current;
     const socket = socketRef.current;
@@ -2897,6 +2906,7 @@ export function PaneTerminal({
           enabled={presented && connected && outputReady && !chatView && !held && !ended && !released && !unsupported}
           interactive={!observing && !secretActive && !viewportSearching} search={searchState} onError={setInputError} />}
         {paneId !== null && chatView && (
+          <>
           <RenderBoundary resetKey={paneId} fallback={(retry) => (
             <div className="chat-view"><div className="chat-empty" role="alert">
               <p>{t("The chat can't be shown. The terminal still works.")}</p>
@@ -2910,6 +2920,8 @@ export function PaneTerminal({
             key={paneId}
             paneId={paneId}
             active={active}
+            threadsEnabled={settings.chatThreads && agent === "pi"}
+            onThreadQuote={setThreadQuote}
             visible={presented && shown}
             pageScroll={pageScroll}
             refreshKey={chatRefresh}
@@ -2936,6 +2948,10 @@ export function PaneTerminal({
             title={title}
           />
           </RenderBoundary>
+          {settings.chatThreads && agent === "pi" && threadQuote !== null && (
+            <ThreadSheet paneId={paneId} quote={threadQuote} onClose={closeThreadSheet} submit={submitThreadCommand} />
+          )}
+          </>
         )}
       </div>
       {/* the queue is the composer's, so it shows under the chat lens only: there alone is an open

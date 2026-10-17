@@ -120,6 +120,10 @@ export interface ChatViewProps {
   paneId: string;
   /** Only the active pane owns the chat-local Mod+F shortcut. */
   active?: boolean;
+  /** the pi threads sheet is armed: a selection in an assistant reply offers "Learn more" */
+  threadsEnabled?: boolean;
+  /** the selection the sheet should open on (threadsEnabled only) */
+  onThreadQuote?: (quote: string) => void;
   /** false while the pane sits off-tab (a cached or retained pane): no reads, no conversation-watch */
   visible?: boolean;
   pageScroll?: { current: ((direction: -1 | 1) => void) | null };
@@ -743,7 +747,7 @@ function TerminalFallback({ paneId, visible }: { paneId: string; visible: boolea
 }
 
 // the app re-renders on every pane-status and poll; an unchanged transcript sits those out
-export const ChatView = memo(function ChatView({ paneId, active = true, visible: paneVisible = true, pageScroll, refreshKey, invalidationKey = 0, onConversationWatch, conversationPushes = false, onTerminalOutput, sentKey = 0, connected, ended, agent, agentStatus, onMetadata, onRead, greeted = false, onPrompt, onSuggestion, onRestored, promptRefreshKey = 0, pendingAnswer = null, onPendingAnswerDone, promptDock = null, onPromptAnswered, title = null }: ChatViewProps) {
+export const ChatView = memo(function ChatView({ paneId, active = true, threadsEnabled = false, onThreadQuote, visible: paneVisible = true, pageScroll, refreshKey, invalidationKey = 0, onConversationWatch, conversationPushes = false, onTerminalOutput, sentKey = 0, connected, ended, agent, agentStatus, onMetadata, onRead, greeted = false, onPrompt, onSuggestion, onRestored, promptRefreshKey = 0, pendingAnswer = null, onPendingAnswerDone, promptDock = null, onPromptAnswered, title = null }: ChatViewProps) {
   const t = useT();
   const { fetchPaneConversation, peekPaneConversation, fetchPanePromptState, fetchPaneTranscript } = useMachineApi();
   const { settings } = useSettings();
@@ -752,6 +756,37 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
   // polls pause while the page or the pane is hidden and pick up at once when it is back
   const pageVisible = usePageVisible();
   const visible = paneVisible && pageVisible;
+
+  // the thread sheet's selection affordance: a selection inside an assistant
+  // reply offers "Learn more" beside it; tapping hands the quote to the sheet
+  const chatRoot = useRef<HTMLDivElement | null>(null);
+  const chatRootWith = (other: { current: HTMLDivElement | null }) => (node: HTMLDivElement | null): void => {
+    chatRoot.current = node;
+    other.current = node;
+  };
+  const [threadButton, setThreadButton] = useState<{ x: number; y: number; quote: string } | null>(null);
+  useEffect(() => {
+    if (!threadsEnabled || !onThreadQuote) return;
+    const update = () => {
+      const selection = document.getSelection();
+      const text = selection === null ? "" : selection.toString().trim();
+      const node = selection?.anchorNode;
+      const element = node instanceof Element ? node : node?.parentElement ?? null;
+      const inAgentTurn = element?.closest?.(".chat-turn-agent") ?? null;
+      const inThisChat = element?.closest?.(".chat-view") === chatRoot.current || chatRoot.current?.contains(element ?? null);
+      if (text.length < 12 || selection?.isCollapsed || !inAgentTurn || !inThisChat) {
+        setThreadButton(null);
+        return;
+      }
+      const rect = selection.getRangeAt(0).getBoundingClientRect();
+      setThreadButton({ x: Math.min(rect.left + rect.width / 2, window.innerWidth - 90), y: Math.max(rect.top - 40, 8), quote: text });
+    };
+    document.addEventListener("selectionchange", update);
+    return () => {
+      document.removeEventListener("selectionchange", update);
+      setThreadButton(null);
+    };
+  }, [threadsEnabled, onThreadQuote]);
   /** the answer last laid out: an unchanged poll (a 304) hands back this very object */
   const lastAnswer = useRef<ConversationResponse | null>(null);
   const [conversationRefresh] = useState(() => new ConversationRefresh());
@@ -1429,7 +1464,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
     <div className="chat-frame-body">
     {state.source === "conversation" ? ChatTimeline === null
       // its chunk is still loading: no turn is read until it arrives, so this is the loading state
-      ? <div className="chat-view chat-view-virtual" role="log" aria-live="polite" aria-label={logLabel}>
+      ? <div className="chat-view chat-view-virtual" ref={chatRoot} role="log" aria-live="polite" aria-label={logLabel}>
         <div className="chat-transcript chat-transcript-virtual">
           <div className="chat-virtual-header">{header}</div>
           <div className="chat-virtual-footer">{footer}</div>
@@ -1449,7 +1484,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
       label={logLabel}
       onScroll={onScroll}
       renderRow={renderTurn}
-    /> : <div className="chat-view" ref={scroller} onScroll={onScroll} role="log" aria-live="polite" aria-label={logLabel}>
+    /> : <div className="chat-view" ref={chatRootWith(scroller)} onScroll={onScroll} role="log" aria-live="polite" aria-label={logLabel}>
       <div className="chat-transcript" data-conversation-source={state.conversationSource}>
         {agent !== null ? <TerminalFallback key={paneId} paneId={paneId} visible={visible} />
           : state.messages.map((message, index) => <FallbackTurn key={index} paneId={paneId} message={message} />)}
@@ -1472,6 +1507,21 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
       if (prompt.steps) setPromptPollKey((key) => key + 1);
       onPendingAnswerDone?.(paneId, prompt.id);
     }} />, promptDock)}
+  {threadsEnabled && threadButton !== null && onThreadQuote !== undefined && (
+    <button
+      type="button"
+      className="thread-select-button"
+      style={{ left: threadButton.x, top: threadButton.y }}
+      onPointerDown={(event) => {
+        // the click that opens the sheet must not also clear the selection it reads
+        event.preventDefault();
+        onThreadQuote(threadButton.quote);
+        setThreadButton(null);
+      }}
+    >
+      <span aria-hidden="true">🧵</span>{t("Learn more")}
+    </button>
+  )}
   {viewer !== null && <ImageLightbox images={viewer.images} index={viewer.index} onClose={closeViewer} />}
   </ImageViewerContext.Provider></ChatHistoryContext.Provider></ChatPaneContext.Provider>;
 });

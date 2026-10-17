@@ -370,6 +370,9 @@ function ChatPage() {
             <Toggle label={t("Suggestion chip")} checked={settings.suggestionChip} onChange={(suggestionChip) => update({ suggestionChip })} />
           </SettingsRow>
         )}
+        <SettingsRow label={t("Thread sheet")} description={t("Selecting text in a pi reply offers “Learn more”: a side conversation that runs in the background while the chat stays put. Needs the pi threads extension.")}>
+          <Toggle label={t("Thread sheet")} checked={settings.chatThreads} onChange={(chatThreads) => update({ chatThreads })} />
+        </SettingsRow>
       </SettingsGroup>
 
       <SettingsGroup title={t("Quick replies")} section="quick-replies">

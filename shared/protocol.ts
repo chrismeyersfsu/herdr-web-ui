@@ -118,6 +118,11 @@ export type { Machine, MachineEvent, PaneTarget, SetupJob, SetupRequest, SetupAc
  *         -> { text } (pane.selection.read: both cells inclusive, rows from the top of the
  *         history, soft-wrapped lines joined; a terminal selection that outlives one screen)
  *  POST   /api/pane/input  { pane_id, text }   -> { ok: true }
+ *  GET    /api/pane/threads?pane_id=   -> { threads: ThreadSummary[] } (the pi threads
+ *         extension's registry for this pane's session; empty for a pane without threads)
+ *  GET    /api/pane/thread?pane_id=&id= -> { turns: ConversationTurn[] } (one thread's turns;
+ *         404 thread_not_found. Threads are pi sessions branched at an anchor: only the
+ *         entries after the anchor are the thread)
  *  GET    /api/pane/conversation?pane_id=    -> ConversationResponse (structured agent
  *         transcript turns - claude, codex, omp, omo, gjc, pi, devin, OpenCode, hermes, grok or agy;
  *         source:"scrollback" when the pane has no recognized, readable store.
@@ -439,6 +444,18 @@ export interface PortalStatus {
 /** GET /api/push: base64url VAPID public key, the `applicationServerKey` a browser subscribes with. */
 export interface PushKey {
   readonly public_key: string;
+}
+
+/** One thread of a pi conversation, from the pi threads extension's registry (GET /api/pane/threads). */
+export interface ThreadSummary {
+  id: string;
+  title: string;
+  question: string;
+  /** the passage of the anchored reply the thread is about */
+  quote: string;
+  status: "running" | "done" | "error";
+  turns: number;
+  created_at: string;
 }
 
 /** One turn of a structured agent conversation (the chat lens source). */

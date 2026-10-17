@@ -21,6 +21,7 @@ import { compressResponse } from "./compress.ts";
 import { isMouseReport, sameAttachment } from "./input-guard.ts";
 import { startStatusCollector } from "./collector.ts";
 import { claudePanePid, claudePaneSession, conversationImage, ConversationUnavailable, forgetPaneTranscriptState, HistoryChanged, paneConversation, paneProcessRoots, toolOutput } from "./conversation.ts";
+import { paneThread, paneThreads } from "./threads.ts";
 import { OPENCODE_TOOL_REF } from "./opencode.ts";
 import { DevinHistoryChanged } from "./devin.ts";
 import { ConversationMonitor } from "./conversation-monitor.ts";
@@ -2695,6 +2696,30 @@ export function createServer(
           // Claude embeds immutable bytes; Codex files and OpenCode tool-image ordinals can change.
           const cacheControl = ref.startsWith("codex-") || ref.startsWith("opencode:") ? "private, no-store" : "private, max-age=86400, immutable";
           return new Response(image.bytes, { headers: { "content-type": image.mediaType, "cache-control": cacheControl, "x-content-type-options": "nosniff" } });
+        } catch (error) {
+          return errorResponse(error);
+        }
+      }
+
+      if (pathname === "/api/pane/threads") {
+        const paneId = url.searchParams.get("pane_id");
+        if (!paneId) return badRequest("missing_pane_id", "pane_id query parameter is required");
+        try {
+          return jsonResponse({ threads: await paneThreads(paneId) }, 200, { "cache-control": "no-store" });
+        } catch (error) {
+          return errorResponse(error);
+        }
+      }
+
+      if (pathname === "/api/pane/thread") {
+        const paneId = url.searchParams.get("pane_id");
+        const threadId = url.searchParams.get("id");
+        if (!paneId) return badRequest("missing_pane_id", "pane_id query parameter is required");
+        if (!threadId) return badRequest("missing_thread_id", "id query parameter is required");
+        try {
+          const turns = await paneThread(paneId, threadId);
+          if (turns === null) return jsonResponse({ error: { code: "thread_not_found", message: "no such thread for this pane" } }, 404);
+          return jsonResponse({ turns }, 200, { "cache-control": "no-store" });
         } catch (error) {
           return errorResponse(error);
         }
