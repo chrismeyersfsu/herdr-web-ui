@@ -30,6 +30,7 @@ const settings: TelemetrySettings = {
   enterSends: true,
   autoSendQueued: false,
   suggestionChip: false,
+  chatThreads: false,
   showThinking: true,
   keepScreenOn: false,
   language: "ko",
