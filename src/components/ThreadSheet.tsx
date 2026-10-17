@@ -179,7 +179,6 @@ export function ThreadSheet({ paneId, quote, onClose, submit }: ThreadSheetProps
                 value={question}
                 onChange={(event) => setQuestion(event.target.value)}
                 placeholder={t("Ask about this selection…")}
-                autoFocus
               />
               <button type="submit" className="thread-sheet-send" disabled={question.trim().length === 0}>↑</button>
             </form>

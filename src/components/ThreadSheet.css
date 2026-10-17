@@ -4,6 +4,18 @@
    composer all come from there; this file is only what is thread-specific.
    Tokens only (conventions.test.ts): no color literals outside src/styles.css. */
 
+/* The scrim follows the VISUAL viewport, like the shell does: viewport.ts publishes
+   --app-height while the soft keyboard is up, and .app sizes itself to it. A fixed
+   inset-0 scrim keeps the sheet's footer behind the keyboard instead, and iOS pans
+   the page to reveal the focused field, dragging it off-screen for good. */
+.modal-scrim.thread-sheet-scrim {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: auto;
+  height: var(--app-height, 100dvh);
+}
+
 .thread-sheet-head { padding: var(--space-3) var(--space-4); }
 
 .thread-sheet-mark { font-size: 16px; }
