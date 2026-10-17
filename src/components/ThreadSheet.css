@@ -1,84 +1,44 @@
-/* The thread sheet: a side conversation over the chat. Mobile-first: a bottom
-   sheet over a scrim; the panel owns its scroll, the chat stays put behind.
+/* The thread sheet's inner layout. The shell is the app's modal layer
+   (createPortal to document.body on a .modal-scrim with a .modal), so the
+   phone's bottom-sheet behavior, the scrim and the stacking above the pane's
+   composer all come from there; this file is only what is thread-specific.
    Tokens only (conventions.test.ts): no color literals outside src/styles.css. */
 
-.thread-sheet {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-}
-
-.thread-sheet-scrim {
-  position: absolute;
-  inset: 0;
-  background: var(--scrim);
-}
-
-.thread-sheet-panel {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  max-height: 82%;
-  display: flex;
-  flex-direction: column;
-  border-radius: 16px 16px 0 0;
-  border-top: 1px solid var(--border-strong);
-  background: var(--bg-panel);
-  color: var(--text);
-  padding: 10px 14px 14px;
-}
-
-.thread-sheet-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-}
+.thread-sheet-head { padding: var(--space-3) var(--space-4); }
 
 .thread-sheet-mark { font-size: 16px; }
 
-.thread-sheet-titles { min-width: 0; flex: 1; }
+.thread-sheet-titles { min-width: 0; flex: 1 1 auto; }
 
 .thread-sheet-title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   color: var(--text-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.thread-sheet-sub { margin: 0; font-size: 11.5px; color: var(--text-dim); }
+.thread-sheet-sub { margin: 0; font-size: var(--fs-sm); color: var(--text-dim); }
 
-.thread-sheet-close {
+.thread-sheet-body {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: none;
-  border-radius: 999px;
-  background: var(--bg-hover);
-  color: var(--text-dim);
-  cursor: pointer;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 .thread-sheet-anchor {
-  margin: 10px 0 0;
-  padding: 8px 10px;
+  padding: var(--space-2) var(--space-3);
   border-left: 3px solid var(--status-working);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--status-working-tint);
 }
 
 .thread-sheet-anchor-label {
-  margin: 0 0 4px;
-  font-size: 10.5px;
-  font-weight: 700;
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--status-working);
@@ -86,89 +46,34 @@
 
 .thread-sheet-anchor-quote {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   line-height: 1.45;
   color: var(--text);
 }
 
-.thread-sheet-quick {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 10px 0 0;
-}
+.thread-sheet-turns { display: flex; flex-direction: column; gap: var(--space-2); }
 
-.thread-chip {
-  padding: 6px 11px;
-  font-size: 12px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--bg-elevated);
-  color: var(--text-dim);
-  cursor: pointer;
-}
-
-.thread-sheet-composer {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  padding: 10px 0 0;
-}
-
-.thread-sheet-input {
-  flex: 1;
-  min-width: 0;
-  padding: 9px 12px;
-  font: inherit;
-  border: 1px solid var(--border-strong);
-  border-radius: 18px;
-  background: var(--bg-input);
-  color: var(--text);
-}
-
-.thread-sheet-send {
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border: none;
-  border-radius: 999px;
-  background: var(--primary);
-  color: var(--primary-text);
-  font-size: 15px;
-  cursor: pointer;
-}
-
-.thread-sheet-send:disabled { opacity: 0.4; cursor: default; }
-
-.thread-sheet-turns {
-  flex: 1;
-  min-height: 80px;
-  overflow-y: auto;
-  padding: 10px 2px;
-}
-
-.thread-sheet-empty { margin: 12px 0; font-size: 12.5px; color: var(--text-dim); }
+.thread-sheet-empty { margin: 0; font-size: var(--fs-sm); color: var(--text-dim); }
 
 .thread-turn {
-  margin: 0 0 10px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  font-size: 13px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
   line-height: 1.5;
   background: var(--bg-elevated);
   color: var(--text);
 }
 
-.thread-turn p { margin: 0 0 6px; }
+.thread-turn p { margin: 0 0 var(--space-1); }
 .thread-turn p:last-child { margin-bottom: 0; }
 .thread-turn-user { color: var(--text-dim); }
 
-.thread-sheet-list { padding: 8px 0 0; border-top: 1px solid var(--border); }
+.thread-sheet-list { display: flex; flex-direction: column; gap: var(--space-1); }
 
 .thread-sheet-list-label {
-  margin: 0 0 6px;
-  font-size: 10.5px;
-  font-weight: 700;
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-dim);
@@ -177,11 +82,11 @@
 .thread-row {
   display: flex;
   width: 100%;
-  gap: 8px;
+  gap: var(--space-2);
   align-items: center;
-  padding: 7px 8px;
+  padding: var(--space-2);
   border: none;
-  border-radius: 9px;
+  border-radius: var(--radius-md);
   background: none;
   color: var(--text);
   text-align: left;
@@ -198,30 +103,78 @@
 .thread-row-body { min-width: 0; display: flex; flex-direction: column; }
 
 .thread-row-title {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--text-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.thread-row-meta { font-size: 11px; color: var(--text-dim); }
+.thread-row-meta { font-size: var(--fs-xs); color: var(--text-dim); }
+
+.thread-sheet-footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: var(--hairline) solid var(--border);
+  padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+}
+
+.thread-sheet-quick { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+
+.thread-chip {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--fs-sm);
+  border: var(--hairline) solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.thread-sheet-composer { display: flex; gap: var(--space-2); align-items: center; }
+
+.thread-sheet-input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  border: var(--hairline) solid var(--border-strong);
+  border-radius: 18px;
+  background: var(--bg-input);
+  color: var(--text);
+}
+
+.thread-sheet-send {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-text);
+  font-size: var(--fs-md);
+  cursor: pointer;
+}
+
+.thread-sheet-send:disabled { opacity: 0.4; cursor: default; }
 
 /* the floating "Learn more" affordance over a chat selection */
 .thread-select-button {
   position: fixed;
-  z-index: 55;
+  z-index: var(--z-popover);
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border: 1px solid var(--border-strong);
-  border-radius: 10px;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border: var(--hairline) solid var(--border-strong);
+  border-radius: var(--radius-md);
   background: var(--bg-elevated);
   color: var(--text-strong);
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   box-shadow: var(--shadow-pop);
 }

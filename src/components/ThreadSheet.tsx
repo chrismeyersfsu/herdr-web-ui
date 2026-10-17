@@ -7,9 +7,13 @@
  * background — then polls the registry and the thread's transcript to show
  * the answer as it lands. Existing threads list below; the main conversation
  * is never switched.
+ *
+ * Rendered through the app's modal layer (createPortal to document.body on a
+ * .modal-scrim): the pane's composer must not paint over it, and the phone's
+ * bottom-sheet behavior comes with that layer.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 import { useT } from "../lib/i18n.ts";
@@ -87,11 +91,10 @@ export function ThreadSheet({ paneId, quote, onClose, submit }: ThreadSheetProps
 
   const active = threads.find((thread) => thread.id === activeId) ?? null;
 
-  return (
-    <div className="thread-sheet" role="dialog" aria-label={t("Thread")}>
-      <div className="thread-sheet-scrim" onClick={onClose} />
-      <section className="thread-sheet-panel">
-        <header className="thread-sheet-head">
+  return createPortal(
+    <div className="modal-scrim thread-sheet-scrim" onClick={onClose}>
+      <section className="modal thread-sheet" role="dialog" aria-label={t("Thread")} onClick={(event) => event.stopPropagation()}>
+        <header className="modal-header thread-sheet-head">
           <span className="thread-sheet-mark" aria-hidden="true">🧵</span>
           <div className="thread-sheet-titles">
             <p className="thread-sheet-title">{active ? active.title : t("Learn more about this")}</p>
@@ -101,17 +104,64 @@ export function ThreadSheet({ paneId, quote, onClose, submit }: ThreadSheetProps
                 : t("A side conversation — the chat stays put")}
             </p>
           </div>
-          <button type="button" className="thread-sheet-close" onClick={onClose} aria-label={t("Close")}>
+          <button type="button" className="icon-button" onClick={onClose} aria-label={t("Close")}>
             <X />
           </button>
         </header>
 
-        {quote !== null && !sent && (
-          <>
+        <div className="modal-body thread-sheet-body">
+          {quote !== null && !sent && (
             <div className="thread-sheet-anchor">
               <p className="thread-sheet-anchor-label">{t("Discussing this selection")}</p>
               <p className="thread-sheet-anchor-quote">{quote.length > 280 ? `${quote.slice(0, 279)}…` : quote}</p>
             </div>
+          )}
+
+          {activeId !== null && (
+            <div className="thread-sheet-turns">
+              {turns === null || turns.length === 0
+                ? <p className="thread-sheet-empty">{t("Waiting for the thread to start…")}</p>
+                : turns.map((turn, index) => (
+                  <article key={index} className={`thread-turn thread-turn-${turn.role}`}>
+                    {turn.parts
+                      .filter((part) => part.kind === "text")
+                      .map((part, partIndex) => <p key={partIndex}>{part.kind === "text" ? part.text : ""}</p>)}
+                  </article>
+                ))}
+            </div>
+          )}
+
+          {threads.length > 0 && (
+            <div className="thread-sheet-list">
+              <p className="thread-sheet-list-label">{t("Threads")}</p>
+              {threads.map((thread) => (
+                <button
+                  key={thread.id}
+                  type="button"
+                  className={`thread-row${thread.id === activeId ? " is-active" : ""}`}
+                  onClick={() => {
+                    setActiveId(thread.id);
+                    setSent(false);
+                    sentQuestion.current = null;
+                  }}
+                >
+                  <span className="thread-row-status" data-status={thread.status} aria-hidden="true" />
+                  <span className="thread-row-body">
+                    <span className="thread-row-title">{thread.title}</span>
+                    <span className="thread-row-meta">
+                      {thread.status === "running" ? t("running") : thread.status === "error" ? t("error") : t("done")}
+                      {" · "}
+                      {t("{n} turns", { n: thread.turns })}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {quote !== null && !sent && (
+          <footer className="thread-sheet-footer">
             <div className="thread-sheet-quick">
               {QUICK_QUESTIONS.map((chip) => (
                 <button key={chip} type="button" className="thread-chip" onClick={() => ask(chip)}>{chip}</button>
@@ -133,51 +183,10 @@ export function ThreadSheet({ paneId, quote, onClose, submit }: ThreadSheetProps
               />
               <button type="submit" className="thread-sheet-send" disabled={question.trim().length === 0}>↑</button>
             </form>
-          </>
-        )}
-
-        {activeId !== null && (
-          <div className="thread-sheet-turns">
-            {turns === null || turns.length === 0
-              ? <p className="thread-sheet-empty">{t("Waiting for the thread to start…")}</p>
-              : turns.map((turn, index) => (
-                <article key={index} className={`thread-turn thread-turn-${turn.role}`}>
-                  {turn.parts
-                    .filter((part) => part.kind === "text")
-                    .map((part, partIndex) => <p key={partIndex}>{part.kind === "text" ? part.text : ""}</p>)}
-                </article>
-              ))}
-          </div>
-        )}
-
-        {threads.length > 0 && (
-          <div className="thread-sheet-list">
-            <p className="thread-sheet-list-label">{t("Threads")}</p>
-            {threads.map((thread) => (
-              <button
-                key={thread.id}
-                type="button"
-                className={`thread-row${thread.id === activeId ? " is-active" : ""}`}
-                onClick={() => {
-                  setActiveId(thread.id);
-                  setSent(false);
-                  sentQuestion.current = null;
-                }}
-              >
-                <span className="thread-row-status" data-status={thread.status} aria-hidden="true" />
-                <span className="thread-row-body">
-                  <span className="thread-row-title">{thread.title}</span>
-                  <span className="thread-row-meta">
-                    {thread.status === "running" ? t("running") : thread.status === "error" ? t("error") : t("done")}
-                    {" · "}
-                    {t("{n} turns", { n: thread.turns })}
-                  </span>
-                </span>
-              </button>
-            ))}
-          </div>
+          </footer>
         )}
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
