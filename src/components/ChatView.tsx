@@ -124,6 +124,8 @@ export interface ChatViewProps {
   threadsEnabled?: boolean;
   /** the selection the sheet should open on (threadsEnabled only) */
   onThreadQuote?: (quote: string) => void;
+  /** opens the sheet on the thread list: the way back to a closed thread (threadsEnabled only) */
+  onThreadList?: () => void;
   /** false while the pane sits off-tab (a cached or retained pane): no reads, no conversation-watch */
   visible?: boolean;
   pageScroll?: { current: ((direction: -1 | 1) => void) | null };
@@ -747,7 +749,7 @@ function TerminalFallback({ paneId, visible }: { paneId: string; visible: boolea
 }
 
 // the app re-renders on every pane-status and poll; an unchanged transcript sits those out
-export const ChatView = memo(function ChatView({ paneId, active = true, threadsEnabled = false, onThreadQuote, visible: paneVisible = true, pageScroll, refreshKey, invalidationKey = 0, onConversationWatch, conversationPushes = false, onTerminalOutput, sentKey = 0, connected, ended, agent, agentStatus, onMetadata, onRead, greeted = false, onPrompt, onSuggestion, onRestored, promptRefreshKey = 0, pendingAnswer = null, onPendingAnswerDone, promptDock = null, onPromptAnswered, title = null }: ChatViewProps) {
+export const ChatView = memo(function ChatView({ paneId, active = true, threadsEnabled = false, onThreadQuote, onThreadList, visible: paneVisible = true, pageScroll, refreshKey, invalidationKey = 0, onConversationWatch, conversationPushes = false, onTerminalOutput, sentKey = 0, connected, ended, agent, agentStatus, onMetadata, onRead, greeted = false, onPrompt, onSuggestion, onRestored, promptRefreshKey = 0, pendingAnswer = null, onPendingAnswerDone, promptDock = null, onPromptAnswered, title = null }: ChatViewProps) {
   const t = useT();
   const { fetchPaneConversation, peekPaneConversation, fetchPanePromptState, fetchPaneTranscript } = useMachineApi();
   const { settings } = useSettings();
@@ -1492,6 +1494,11 @@ export const ChatView = memo(function ChatView({ paneId, active = true, threadsE
     </div>}
     {state.source === "conversation" && <ChatMinimap turns={minimap} rowKeys={rowKeys} scroller={scroller} onJump={jumpToTurn} />}
     {jump}
+    {threadsEnabled && onThreadList !== undefined && (
+      <button type="button" className="chat-threads-button" onClick={onThreadList} aria-label={t("Threads")} title={t("Threads")}>
+        <span aria-hidden="true">🧵</span>
+      </button>
+    )}
     </div>
     </div>
   {/* The prompt card is not part of the transcript: it is drawn on the composer's column, over the

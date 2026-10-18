@@ -2317,8 +2317,9 @@ export function PaneTerminal({
   // with the reason. Bracketed-paste wrapping follows the pane program's mode.
   // the pi threads sheet: opened on a chat selection (ChatView's "Learn more"),
   // submits through the composer so the pane types the /thread command itself
-  const [threadQuote, setThreadQuote] = useState<string | null>(null);
-  const closeThreadSheet = useCallback(() => setThreadQuote(null), []);
+  const [threadSheet, setThreadSheet] = useState<{ quote: string | null } | null>(null);
+  const closeThreadSheet = useCallback(() => setThreadSheet(null), []);
+  const openThreadList = useCallback(() => setThreadSheet({ quote: null }), []);
   const submitThreadCommand = useCallback((text: string) => {
     void submitComposerMessage(text);
   }, []);
@@ -2921,7 +2922,8 @@ export function PaneTerminal({
             paneId={paneId}
             active={active}
             threadsEnabled={settings.chatThreads && agent === "pi"}
-            onThreadQuote={setThreadQuote}
+            onThreadQuote={(quote) => setThreadSheet({ quote })}
+            onThreadList={openThreadList}
             visible={presented && shown}
             pageScroll={pageScroll}
             refreshKey={chatRefresh}
@@ -2948,8 +2950,8 @@ export function PaneTerminal({
             title={title}
           />
           </RenderBoundary>
-          {settings.chatThreads && agent === "pi" && threadQuote !== null && (
-            <ThreadSheet paneId={paneId} quote={threadQuote} onClose={closeThreadSheet} submit={submitThreadCommand} />
+          {settings.chatThreads && agent === "pi" && threadSheet !== null && (
+            <ThreadSheet paneId={paneId} quote={threadSheet.quote} onClose={closeThreadSheet} submit={submitThreadCommand} />
           )}
           </>
         )}

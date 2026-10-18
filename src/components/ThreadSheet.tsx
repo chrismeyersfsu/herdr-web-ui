@@ -60,9 +60,11 @@ export function ThreadSheet({ paneId, quote, onClose, submit }: ThreadSheetProps
         if (focused || occluded) {
           scrim.style.top = `${viewport.offsetTop}px`;
           scrim.style.height = `${viewport.height}px`;
+          scrim.classList.add("is-keyboard");
         } else {
           scrim.style.top = "";
           scrim.style.height = "";
+          scrim.classList.remove("is-keyboard");
         }
       });
     };
@@ -80,6 +82,7 @@ export function ThreadSheet({ paneId, quote, onClose, submit }: ThreadSheetProps
       document.removeEventListener("focusout", afterFocus);
       scrim.style.top = "";
       scrim.style.height = "";
+      scrim.classList.remove("is-keyboard");
     };
   }, []);
 
@@ -140,12 +143,12 @@ export function ThreadSheet({ paneId, quote, onClose, submit }: ThreadSheetProps
         <header className="modal-header thread-sheet-head">
           <span className="thread-sheet-mark" aria-hidden="true">🧵</span>
           <div className="thread-sheet-titles">
-            <p className="thread-sheet-title">{active ? active.title : t("Learn more about this")}</p>
-            <p className="thread-sheet-sub">
+            <p className="thread-sheet-title">{active ? active.title : quote !== null ? t("Learn more about this") : t("Threads")}</p>
+            {active !== null || quote !== null ? <p className="thread-sheet-sub">
               {active
                 ? (active.status === "running" ? t("Running in the background…") : t("Done"))
                 : t("A side conversation — the chat stays put")}
-            </p>
+            </p> : null}
           </div>
           <button type="button" className="icon-button" onClick={onClose} aria-label={t("Close")}>
             <X />
