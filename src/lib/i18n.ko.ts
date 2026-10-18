@@ -1346,4 +1346,5 @@ export const KO: Record<string, string> = {
   "Learn more": "자세히 알아보기",
   "Thread sheet": "스레드 시트",
   "Selecting text in a pi reply offers “Learn more”: a side conversation that runs in the background while the chat stays put. Needs the pi threads extension.": "pi 응답에서 텍스트를 선택하면 “자세히 알아보기”가 나타납니다: 채팅은 그대로 두고 백그라운드에서 실행되는 별도 대화입니다. pi 스레드 확장이 필요합니다.",
+  "Ask a follow-up…": "후속 질문하기…",
 };

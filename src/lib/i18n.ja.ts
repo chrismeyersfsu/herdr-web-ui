@@ -1348,4 +1348,5 @@ export const JA: Record<string, string> = {
   "Learn more": "詳しく知る",
   "Thread sheet": "スレッドシート",
   "Selecting text in a pi reply offers “Learn more”: a side conversation that runs in the background while the chat stays put. Needs the pi threads extension.": "pi の返信のテキストを選択すると「詳しく知る」が現れます。チャットはそのままに、バックグラウンドで動く別の会話です。pi スレッド拡張が必要です。",
+  "Ask a follow-up…": "さらに質問する…",
 };

@@ -1350,4 +1350,5 @@ export const ZH: Record<string, string> = {
   "Learn more": "了解更多",
   "Thread sheet": "话题面板",
   "Selecting text in a pi reply offers “Learn more”: a side conversation that runs in the background while the chat stays put. Needs the pi threads extension.": "在 pi 的回复中选择文本会出现“了解更多”：聊天保持原样，旁路对话在后台运行。需要 pi 话题扩展。",
+  "Ask a follow-up…": "继续追问…",
 };

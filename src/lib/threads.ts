@@ -31,3 +31,8 @@ export function threadCommand(quote: string, question: string): string {
   const collapsed = quote.replace(/\s+/g, " ").trim();
   return `/thread --quote "${collapsed.replace(/"/g, "'")}" ${question.trim()}`;
 }
+
+/** A follow-up turn on an existing thread: the extension continues its session. */
+export function threadAskCommand(id: string, question: string): string {
+  return `/thread ask ${id} ${question.trim()}`;
+}

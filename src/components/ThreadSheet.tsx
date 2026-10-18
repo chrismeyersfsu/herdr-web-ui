@@ -18,7 +18,7 @@ import { X } from "lucide-react";
 
 import { useT } from "../lib/i18n.ts";
 import { Markdown } from "./Markdown.tsx";
-import { fetchPaneThread, fetchPaneThreads, threadCommand, type ThreadSummary } from "../lib/threads.ts";
+import { fetchPaneThread, fetchPaneThreads, threadAskCommand, threadCommand, type ThreadSummary } from "../lib/threads.ts";
 import type { ConversationTurn } from "../../shared/protocol.ts";
 
 export interface ThreadSheetProps {
@@ -129,12 +129,20 @@ export function ThreadSheet({ paneId, quote, onClose, submit }: ThreadSheetProps
   }, [paneId, activeId]);
 
   const ask = useCallback((text: string) => {
-    if (quote === null || text.trim().length === 0) return;
-    sentQuestion.current = text.trim();
-    submit(threadCommand(quote, text));
-    setSent(true);
+    const question = text.trim();
+    if (question.length === 0) return;
+    if (activeId !== null) {
+      // a follow-up turn: the extension continues the thread's own session
+      submit(threadAskCommand(activeId, question));
+    } else if (quote !== null) {
+      sentQuestion.current = question;
+      submit(threadCommand(quote, question));
+      setSent(true);
+    } else {
+      return;
+    }
     setQuestion("");
-  }, [quote, submit]);
+  }, [quote, activeId, submit]);
 
   const active = threads.find((thread) => thread.id === activeId) ?? null;
 
@@ -207,13 +215,15 @@ export function ThreadSheet({ paneId, quote, onClose, submit }: ThreadSheetProps
           )}
         </div>
 
-        {quote !== null && !sent && (
+        {(quote !== null && !sent) || activeId !== null ? (
           <footer className="thread-sheet-footer">
-            <div className="thread-sheet-quick">
-              {QUICK_QUESTIONS.map((chip) => (
-                <button key={chip} type="button" className="thread-chip" onClick={() => ask(chip)}>{chip}</button>
-              ))}
-            </div>
+            {quote !== null && !sent && (
+              <div className="thread-sheet-quick">
+                {QUICK_QUESTIONS.map((chip) => (
+                  <button key={chip} type="button" className="thread-chip" onClick={() => ask(chip)}>{chip}</button>
+                ))}
+              </div>
+            )}
             <form
               className="thread-sheet-composer"
               onSubmit={(event) => {
@@ -225,12 +235,12 @@ export function ThreadSheet({ paneId, quote, onClose, submit }: ThreadSheetProps
                 className="thread-sheet-input"
                 value={question}
                 onChange={(event) => setQuestion(event.target.value)}
-                placeholder={t("Ask about this selection…")}
+                placeholder={activeId !== null ? t("Ask a follow-up…") : t("Ask about this selection…")}
               />
               <button type="submit" className="thread-sheet-send" disabled={question.trim().length === 0}>↑</button>
             </form>
           </footer>
-        )}
+        ) : null}
       </section>
     </div>,
     document.body,

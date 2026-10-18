@@ -113,7 +113,7 @@ function readThreadSession(sessionFile: string, anchorEntryId: string): ThreadLi
   }
 
   const turns: ConversationTurn[] = [];
-  let messages = 0;
+  let replies = 0;
   let status: ThreadLive["status"] = "running";
   let pastAnchor = false;
   for (const line of text.split("\n")) {
@@ -141,15 +141,15 @@ function readThreadSession(sessionFile: string, anchorEntryId: string): ThreadLi
         : [];
     if (parts.length === 0) continue;
     turns.push({ role, ts: null, parts });
-    messages += 1;
     if (role === "assistant") {
+      replies += 1;
       const stopReason = entry.message.stopReason;
       if (stopReason === "error") status = "error";
       else if (stopReason && stopReason !== "pending") status = "done";
     }
   }
-  // parity with the extension's turn count: the anchored question itself is not a turn
-  return { turns, status, turnCount: Math.max(0, messages - 1) };
+  // one turn per assistant reply, the extension's count (its refreshThreadStatus)
+  return { turns, status, turnCount: replies };
 }
 
 export async function paneThread(paneId: string, threadId: string): Promise<ConversationTurn[] | null> {
