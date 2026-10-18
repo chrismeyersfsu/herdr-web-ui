@@ -76,8 +76,7 @@
   color: var(--text);
 }
 
-.thread-turn p { margin: 0 0 var(--space-1); }
-.thread-turn p:last-child { margin-bottom: 0; }
+/* the app's .markdown owns the spacing inside a turn (Markdown renders it) */
 .thread-turn-user { color: var(--text-dim); }
 
 .thread-sheet-list { display: flex; flex-direction: column; gap: var(--space-1); }

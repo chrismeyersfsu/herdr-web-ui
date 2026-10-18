@@ -17,6 +17,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 import { useT } from "../lib/i18n.ts";
+import { Markdown } from "./Markdown.tsx";
 import { fetchPaneThread, fetchPaneThreads, threadCommand, type ThreadSummary } from "../lib/threads.ts";
 import type { ConversationTurn } from "../../shared/protocol.ts";
 
@@ -171,7 +172,7 @@ export function ThreadSheet({ paneId, quote, onClose, submit }: ThreadSheetProps
                   <article key={index} className={`thread-turn thread-turn-${turn.role}`}>
                     {turn.parts
                       .filter((part) => part.kind === "text")
-                      .map((part, partIndex) => <p key={partIndex}>{part.kind === "text" ? part.text : ""}</p>)}
+                      .map((part, partIndex) => part.kind === "text" ? <Markdown key={partIndex}>{part.text}</Markdown> : null)}
                   </article>
                 ))}
             </div>
