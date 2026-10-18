@@ -826,7 +826,19 @@ export const ChatView = memo(function ChatView({ paneId, active = true, threadsE
         return;
       }
       const rect = selection.getRangeAt(0).getBoundingClientRect();
-      setThreadButton({ x: Math.min(rect.left + rect.width / 2, window.innerWidth - 90), y: Math.max(rect.top - 40, 8), quote: text });
+      // a selection wholly off-screen (the virtualizer re-rendering behind the
+      // viewport) gets no button: it would dock to a passage the user cannot see
+      if (rect.bottom < 0 || rect.top > window.innerHeight) {
+        setThreadButton(null);
+        return;
+      }
+      // Below the selection: the native selection menu (Copy/Find/Look Up on iOS,
+      // which a page cannot join) anchors above it and covered a button placed there.
+      // Above again only when below would run off the screen, then clearing the menu.
+      const below = rect.bottom + 8;
+      const y = Math.min(Math.max(below + 48 <= window.innerHeight ? below : Math.max(rect.top - 96, 8), 8), window.innerHeight - 52);
+      const x = Math.min(Math.max(rect.left + rect.width / 2, 88), window.innerWidth - 88);
+      setThreadButton({ x, y, quote: text });
     };
     document.addEventListener("selectionchange", update);
     return () => {

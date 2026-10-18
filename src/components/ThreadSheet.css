@@ -182,6 +182,8 @@
 /* the floating "Learn more" affordance over a chat selection */
 .thread-select-button {
   position: fixed;
+  /* x is the button's CENTER (the effect clamps it inside the viewport) */
+  transform: translateX(-50%);
   z-index: var(--z-popover);
   display: flex;
   align-items: center;
