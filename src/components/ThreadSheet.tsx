@@ -39,6 +39,49 @@ export function ThreadSheet({ paneId, quote, onClose, submit }: ThreadSheetProps
   const [question, setQuestion] = useState("");
   const [sent, setSent] = useState(false);
   const sentQuestion = useRef<string | null>(null);
+  const scrimRef = useRef<HTMLDivElement | null>(null);
+
+  // The sheet's scrim follows the VISUAL viewport while the keyboard is up: the
+  // input is tapped, the keyboard rises, and the scrim shrinks and pans with it
+  // (visualViewport height + offsetTop), so the composer stays above the keys.
+  // Tracked here rather than through --app-height: that publication's occlusion
+  // heuristics do not reliably cover an input that lives in this body-level
+  // portal, and the keyboard must never cover the field the user just tapped.
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const scrim = scrimRef.current;
+    if (!viewport || !scrim) return;
+    let frame = 0;
+    const apply = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const focused = scrim.contains(document.activeElement);
+        const occluded = window.innerHeight - viewport.height > window.innerHeight * 0.15;
+        if (focused || occluded) {
+          scrim.style.top = `${viewport.offsetTop}px`;
+          scrim.style.height = `${viewport.height}px`;
+        } else {
+          scrim.style.top = "";
+          scrim.style.height = "";
+        }
+      });
+    };
+    const afterFocus = () => window.setTimeout(apply, 0);
+    viewport.addEventListener("resize", apply);
+    viewport.addEventListener("scroll", apply);
+    document.addEventListener("focusin", apply);
+    document.addEventListener("focusout", afterFocus);
+    apply();
+    return () => {
+      cancelAnimationFrame(frame);
+      viewport.removeEventListener("resize", apply);
+      viewport.removeEventListener("scroll", apply);
+      document.removeEventListener("focusin", apply);
+      document.removeEventListener("focusout", afterFocus);
+      scrim.style.top = "";
+      scrim.style.height = "";
+    };
+  }, []);
 
   // the registry: refresh while the sheet is open (a background thread finishes)
   useEffect(() => {
@@ -92,7 +135,7 @@ export function ThreadSheet({ paneId, quote, onClose, submit }: ThreadSheetProps
   const active = threads.find((thread) => thread.id === activeId) ?? null;
 
   return createPortal(
-    <div className="modal-scrim thread-sheet-scrim" onClick={onClose}>
+    <div className="modal-scrim thread-sheet-scrim" ref={scrimRef} onClick={onClose}>
       <section className="modal thread-sheet" role="dialog" aria-label={t("Thread")} onClick={(event) => event.stopPropagation()}>
         <header className="modal-header thread-sheet-head">
           <span className="thread-sheet-mark" aria-hidden="true">🧵</span>
